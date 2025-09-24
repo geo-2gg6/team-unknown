@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Privacy Events{% endblock %}
+{% block content %}
+<h1>Detected Events</h1>
+<ul class="list-group mt-4">
+	{% for event in events %}
+	<li class="list-group-item">
+		<strong>{{ event.event_type }}</strong> at {{ event.timestamp }}<br>
+		{{ event.details }}
+	</li>
+	{% else %}
+	<li class="list-group-item">No events detected yet.</li>
+	{% endfor %}
+</ul>
+{% endblock %}

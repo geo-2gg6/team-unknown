@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Smart Device Secret Keeper{% endblock %}
+{% block content %}
+<style>
+	body { font-family: 'Inter', sans-serif; background-color: #e5e7eb; }
+	.phone-screen { background-color: #1A1A2E; background-image: linear-gradient(180deg, #1A1A2E 0%, #16213E 100%); }
+	.status-secure { background-color: #16a34a; }
+	.status-warning { background-color: #ea580c; }
+	.status-risky { background-color: #dc2626; }
+	.status-unknown { background-color: #64748b; }
+	.status-secure-text { color: #16a34a; }
+	.status-warning-text { color: #ea580c; }
+	.status-risky-text { color: #dc2626; }
+	.status-unknown-text { color: #64748b; }
+	.status-secure-bg-light { background-color: rgba(22, 163, 74, 0.1); }
+	.status-warning-bg-light { background-color: rgba(234, 88, 12, 0.1); }
+	.status-risky-bg-light { background-color: rgba(220, 38, 38, 0.1); }
+	.status-unknown-bg-light { background-color: rgba(100, 116, 139, 0.1); }
+</style>
+<div class="w-full max-w-sm mx-auto">
+	<div class="relative mx-auto border-gray-800 bg-gray-800 border-[14px] rounded-[2.5rem] h-[750px] w-[380px] shadow-2xl">
+		<div class="w-[140px] h-[18px] bg-gray-800 top-0 rounded-b-[1rem] left-1/2 -translate-x-1/2 absolute"></div>
+		<div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[124px] rounded-l-lg"></div>
+		<div class="h-[46px] w-[3px] bg-gray-800 absolute -left-[17px] top-[178px] rounded-l-lg"></div>
+		<div class="h-[64px] w-[3px] bg-gray-800 absolute -right-[17px] top-[142px] rounded-r-lg"></div>
+		<div class="rounded-[2rem] overflow-hidden w-full h-full bg-white phone-screen text-white flex flex-col p-6">
+			<header class="text-center pt-8 pb-4 flex-shrink-0">
+				<h1 class="text-2xl font-bold tracking-wide">Secret Keeper</h1>
+			</header>
+			<main class="flex-grow flex flex-col items-center justify-center text-center px-4">
+				<div class="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center border-4 border-white/20">
+					<span class="text-5xl">🛡️</span>
+				</div>
+				<h2 class="text-3xl font-bold mt-6">Your Network Guardian</h2>
+				<p class="mt-3 text-white/70 max-w-xs">Live device events and privacy alerts will appear below.</p>
+				<div class="mt-10 w-full">
+					<div id="live-feed" class="space-y-3"></div>
+				</div>
+			</main>
+		</div>
+	</div>
+</div>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
