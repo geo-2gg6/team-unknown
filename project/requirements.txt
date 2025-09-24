@@ -4,3 +4,4 @@ eventlet
 Flask-SQLAlchemy
 scikit-learn
 numpy
+werkzeug
