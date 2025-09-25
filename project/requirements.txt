@@ -1,7 +1,4 @@
 Flask
-Flask-SocketIO
-eventlet
 Flask-SQLAlchemy
-scikit-learn
-numpy
-werkzeug
+Werkzeug
+Flask-Login
