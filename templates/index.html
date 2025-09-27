@@ -85,6 +85,9 @@
                     <button id="clear-data" class="w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
                         🗑️ Clear Data
                     </button>
+                    <button id="test-requests" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        🧪 Test Requests
+                    </button>
                     <div class="text-xs text-gray-400 mt-2">
                         Monitor network requests as you browse
                     </div>
@@ -154,6 +157,7 @@
         startBtn.addEventListener('click', startMonitoring);
         stopBtn.addEventListener('click', stopMonitoring);
         clearBtn.addEventListener('click', clearData);
+        document.getElementById('test-requests').addEventListener('click', testRequests);
 
         // Generate unique session ID
         function generateSessionId() {
@@ -183,10 +187,48 @@
             // Start tracking navigation
             trackNavigation();
             
+            // Start Performance API monitoring
+            startPerformanceMonitoring();
+            
             // Start periodic sync
             setInterval(syncEvents, 2000);
             
             console.log('🔍 Started monitoring network activity');
+        }
+        
+        // Use Performance API to monitor all network requests
+        function startPerformanceMonitoring() {
+            // Monitor all resource loads using Performance Observer
+            if ('PerformanceObserver' in window) {
+                const observer = new PerformanceObserver((list) => {
+                    const entries = list.getEntries();
+                    entries.forEach(entry => {
+                        if (entry.name && entry.name !== window.location.href) {
+                            // Skip same-origin requests to avoid duplicates
+                            if (!entry.name.includes(window.location.hostname)) {
+                                trackRequest(entry.name, 'resource');
+                            }
+                        }
+                    });
+                });
+                
+                try {
+                    observer.observe({ entryTypes: ['resource'] });
+                    console.log('📊 Performance Observer started');
+                } catch (e) {
+                    console.log('Performance Observer not supported, using fallback');
+                }
+            }
+            
+            // Fallback: Monitor existing resources
+            setTimeout(() => {
+                const resources = performance.getEntriesByType('resource');
+                resources.forEach(resource => {
+                    if (resource.name && !resource.name.includes(window.location.hostname)) {
+                        trackRequest(resource.name, 'resource');
+                    }
+                });
+            }, 1000);
         }
 
         // Stop monitoring
@@ -289,11 +331,13 @@
                 return img;
             };
             
-            // Monitor script loads
+            // Monitor script and CSS loads
             const originalCreateElement = document.createElement;
             document.createElement = function(tagName) {
                 const element = originalCreateElement.call(this, tagName);
-                if (tagName.toLowerCase() === 'script') {
+                const tagLower = tagName.toLowerCase();
+                
+                if (tagLower === 'script') {
                     const originalSrc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
                     Object.defineProperty(element, 'src', {
                         get: originalSrc.get,
@@ -304,15 +348,7 @@
                             return originalSrc.set.call(this, value);
                         }
                     });
-                }
-                return element;
-            };
-            
-            // Monitor CSS loads
-            const originalCreateElement2 = document.createElement;
-            document.createElement = function(tagName) {
-                const element = originalCreateElement2.call(this, tagName);
-                if (tagName.toLowerCase() === 'link') {
+                } else if (tagLower === 'link') {
                     const originalHref = Object.getOwnPropertyDescriptor(HTMLLinkElement.prototype, 'href');
                     Object.defineProperty(element, 'href', {
                         get: originalHref.get,
@@ -324,6 +360,7 @@
                         }
                     });
                 }
+                
                 return element;
             };
             
@@ -479,6 +516,41 @@
             updateStats();
             console.log('🗑️ Cleared all data');
         }
+        
+        // Test function to generate network requests
+        function testRequests() {
+            if (!isMonitoring) {
+                alert('Please start monitoring first!');
+                return;
+            }
+            
+            console.log('🧪 Generating test requests...');
+            
+            // Test different types of requests
+            const testUrls = [
+                'https://httpbin.org/get',
+                'https://jsonplaceholder.typicode.com/posts/1',
+                'https://api.github.com/users/octocat',
+                'https://httpbin.org/image/png',
+                'https://httpbin.org/delay/1'
+            ];
+            
+            testUrls.forEach((url, index) => {
+                setTimeout(() => {
+                    // Track the request
+                    trackRequest(url, 'test-fetch');
+                    
+                    // Actually make the request
+                    fetch(url)
+                        .then(response => {
+                            trackRequest(url, 'test-success');
+                        })
+                        .catch(error => {
+                            trackRequest(url, 'test-error');
+                        });
+                }, index * 500);
+            });
+        }
 
         // Utility functions
         function extractDomain(url) {
@@ -529,6 +601,7 @@
                 'iframe': '🖼️',
                 'websocket': '🔌',
                 'eventsource': '📡',
+                'resource': '📦',
                 'default': '🔗'
             };
             return icons[type] || icons.default;
