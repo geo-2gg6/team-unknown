@@ -226,14 +226,129 @@
                 }
             });
             
-            // Track fetch requests (if any)
+            // Enhanced fetch monitoring
             const originalFetch = window.fetch;
             window.fetch = function(...args) {
                 const url = args[0];
                 if (typeof url === 'string') {
                     trackRequest(url, 'fetch');
                 }
-                return originalFetch.apply(this, args);
+                return originalFetch.apply(this, args)
+                    .then(response => {
+                        // Track successful responses
+                        if (response.ok) {
+                            trackRequest(url, 'fetch-success');
+                        }
+                        return response;
+                    })
+                    .catch(error => {
+                        // Track failed requests
+                        trackRequest(url, 'fetch-error');
+                        throw error;
+                    });
+            };
+            
+            // Monitor XMLHttpRequest
+            const originalXHR = window.XMLHttpRequest;
+            window.XMLHttpRequest = function() {
+                const xhr = new originalXHR();
+                const originalOpen = xhr.open;
+                const originalSend = xhr.send;
+                
+                xhr.open = function(method, url, ...args) {
+                    this._method = method;
+                    this._url = url;
+                    trackRequest(url, 'xhr');
+                    return originalOpen.apply(this, [method, url, ...args]);
+                };
+                
+                xhr.send = function(...args) {
+                    if (this._url) {
+                        trackRequest(this._url, 'xhr-send');
+                    }
+                    return originalSend.apply(this, args);
+                };
+                
+                return xhr;
+            };
+            
+            // Monitor image loads
+            const originalImage = window.Image;
+            window.Image = function() {
+                const img = new originalImage();
+                const originalSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+                Object.defineProperty(img, 'src', {
+                    get: originalSrc.get,
+                    set: function(value) {
+                        if (value && typeof value === 'string') {
+                            trackRequest(value, 'image');
+                        }
+                        return originalSrc.set.call(this, value);
+                    }
+                });
+                return img;
+            };
+            
+            // Monitor script loads
+            const originalCreateElement = document.createElement;
+            document.createElement = function(tagName) {
+                const element = originalCreateElement.call(this, tagName);
+                if (tagName.toLowerCase() === 'script') {
+                    const originalSrc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');
+                    Object.defineProperty(element, 'src', {
+                        get: originalSrc.get,
+                        set: function(value) {
+                            if (value && typeof value === 'string') {
+                                trackRequest(value, 'script');
+                            }
+                            return originalSrc.set.call(this, value);
+                        }
+                    });
+                }
+                return element;
+            };
+            
+            // Monitor CSS loads
+            const originalCreateElement2 = document.createElement;
+            document.createElement = function(tagName) {
+                const element = originalCreateElement2.call(this, tagName);
+                if (tagName.toLowerCase() === 'link') {
+                    const originalHref = Object.getOwnPropertyDescriptor(HTMLLinkElement.prototype, 'href');
+                    Object.defineProperty(element, 'href', {
+                        get: originalHref.get,
+                        set: function(value) {
+                            if (value && typeof value === 'string') {
+                                trackRequest(value, 'css');
+                            }
+                            return originalHref.set.call(this, value);
+                        }
+                    });
+                }
+                return element;
+            };
+            
+            // Monitor iframe loads
+            document.addEventListener('DOMContentLoaded', function() {
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach(iframe => {
+                    if (iframe.src) {
+                        trackRequest(iframe.src, 'iframe');
+                    }
+                });
+            });
+            
+            // Monitor WebSocket connections
+            const originalWebSocket = window.WebSocket;
+            window.WebSocket = function(url, ...args) {
+                trackRequest(url, 'websocket');
+                return new originalWebSocket(url, ...args);
+            };
+            
+            // Monitor EventSource (Server-Sent Events)
+            const originalEventSource = window.EventSource;
+            window.EventSource = function(url, ...args) {
+                trackRequest(url, 'eventsource');
+                return new originalEventSource(url, ...args);
             };
         }
 
@@ -404,6 +519,16 @@
                 'click': '👆',
                 'form': '📝',
                 'fetch': '📡',
+                'fetch-success': '✅',
+                'fetch-error': '❌',
+                'xhr': '📡',
+                'xhr-send': '📤',
+                'image': '🖼️',
+                'script': '📜',
+                'css': '🎨',
+                'iframe': '🖼️',
+                'websocket': '🔌',
+                'eventsource': '📡',
                 'default': '🔗'
             };
             return icons[type] || icons.default;
