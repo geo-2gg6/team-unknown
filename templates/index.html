@@ -1,56 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Privacy Scanner — Demo</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background: #0f172a; }
-    .phone {
-      width: 360px;
-      height: 640px;
-      background: #0f172a;
-      border-radius: 1.4rem;
-      overflow: hidden;
-      box-shadow: 0 10px 40px rgba(2,6,23,0.7);
-      position: relative;
-      border: 1px solid rgba(255,255,255,0.03);
-    }
-    .screen {
-      width: 100%;
-      height: 100%;
-      padding: 18px;
-      box-sizing: border-box;
-    }
-    .scan-btn {
-      position: absolute;
-      bottom: 20px;
-      right: 18px;
-      background: #E94560;
-      color: white;
-      padding: 10px 14px;
-      border-radius: 9999px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(233,69,96,0.18);
-      transition: transform 0.14s;
-    }
-    .scan-btn:hover { transform: translateY(-3px); }
-    canvas { display:block; }
-    /* small scrollbar styling for results container */
-    #results-container::-webkit-scrollbar { height: 6px; width: 6px; }
-    #results-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.07); border-radius: 999px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Scanner - Cloud Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse { animation: pulse 2s infinite; }
+    </style>
 </head>
-<body class="flex justify-center items-center min-h-screen text-white">
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">🔒 Privacy Scanner</h1>
+            <p class="text-gray-400">Real-time network monitoring from your devices</p>
+        </header>
 
-  <div class="phone">
-    <div id="screen" class="screen"></div>
-    <button id="scanAgainBtn" class="scan-btn hidden">Scan Again</button>
-  </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Device Status -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">📱 Connected Devices</h2>
+                <div id="devices-list" class="space-y-2">
+                    <div class="text-gray-400">Loading devices...</div>
+                </div>
+            </div>
 
-  <script src="/static/script.js"></script>
+            <!-- Quick Stats -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">📊 Quick Stats</h2>
+                <div id="stats" class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Total Events:</span>
+                        <span id="total-events" class="font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Safe:</span>
+                        <span id="safe-count" class="text-green-400 font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Risk:</span>
+                        <span id="risk-count" class="text-red-400 font-mono">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Caution:</span>
+                        <span id="caution-count" class="text-yellow-400 font-mono">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">🎛️ Controls</h2>
+                <div class="space-y-3">
+                    <button id="refresh-btn" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        🔄 Refresh Data
+                    </button>
+                    <button id="scan-btn" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                        📡 Start Live Scan
+                    </button>
+                    <div class="text-xs text-gray-400">
+                        Run local_agent.py on your device to see real-time data
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Events Display -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">🔍 Network Activity</h2>
+                <div class="flex items-center space-x-4">
+                    <select id="device-filter" class="bg-gray-700 text-white px-3 py-1 rounded">
+                        <option value="">All Devices</option>
+                    </select>
+                    <span id="last-update" class="text-sm text-gray-400"></span>
+                </div>
+            </div>
+            
+            <div id="events-container" class="space-y-3 max-h-96 overflow-y-auto">
+                <div class="text-center text-gray-400 py-8">
+                    <div class="text-4xl mb-2">📡</div>
+                    <div>No network activity detected</div>
+                    <div class="text-sm mt-2">Start the local agent to see real-time data</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isScanning = false;
+        let scanInterval = null;
+
+        // DOM elements
+        const eventsContainer = document.getElementById('events-container');
+        const devicesList = document.getElementById('devices-list');
+        const deviceFilter = document.getElementById('device-filter');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const scanBtn = document.getElementById('scan-btn');
+        const lastUpdate = document.getElementById('last-update');
+
+        // Event listeners
+        refreshBtn.addEventListener('click', loadData);
+        scanBtn.addEventListener('click', toggleScan);
+        deviceFilter.addEventListener('change', loadData);
+
+        // Load initial data
+        loadData();
+        loadDevices();
+
+        async function loadData() {
+            try {
+                const deviceId = deviceFilter.value;
+                const url = deviceId ? `/api/events?device_id=${deviceId}` : '/api/events?n=100';
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                renderEvents(data.events || []);
+                updateStats(data.events || []);
+                lastUpdate.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Error loading data:', error);
+                eventsContainer.innerHTML = '<div class="text-red-400 text-center py-4">Error loading data</div>';
+            }
+        }
+
+        async function loadDevices() {
+            try {
+                const response = await fetch('/api/devices');
+                const data = await response.json();
+                
+                renderDevices(data.devices || []);
+                updateDeviceFilter(data.devices || []);
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+
+        function renderEvents(events) {
+            if (!events || events.length === 0) {
+                eventsContainer.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <div class="text-4xl mb-2">📡</div>
+                        <div>No network activity detected</div>
+                        <div class="text-sm mt-2">Start the local agent to see real-time data</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = events.map(event => {
+                const verdict = (event.verdict || '').toUpperCase();
+                const colorBg = verdict === 'RISK' ? 'bg-red-600/20' : 
+                              verdict === 'SAFE' ? 'bg-green-600/15' : 'bg-yellow-600/15';
+                const textColor = verdict === 'RISK' ? 'text-red-300' : 
+                                verdict === 'SAFE' ? 'text-green-300' : 'text-yellow-300';
+                
+                const title = event.process_name ? 
+                    `${event.process_name} (PID ${event.pid || '?'})` : 
+                    `PID ${event.pid || '?'}`;
+                
+                const timestamp = new Date(event.timestamp * 1000).toLocaleString();
+                const deviceId = event.device_id ? event.device_id.substring(0, 8) : 'Unknown';
+                
+                return `
+                    <div class="p-4 rounded-lg ${colorBg} border border-gray-700">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="font-semibold text-lg">${escapeHtml(title)}</div>
+                                <div class="text-sm text-gray-400 mt-1">
+                                    Device: ${escapeHtml(deviceId)} • ${escapeHtml(timestamp)}
+                                </div>
+                                <div class="text-sm text-gray-300 mt-1">
+                                    ${escapeHtml(event.laddr || '')} → ${escapeHtml(event.raddr || '')}
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-lg font-bold ${textColor}">${escapeHtml(verdict)}</div>
+                                <div class="text-xs text-gray-400">${escapeHtml(event.status || '')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            eventsContainer.innerHTML = html;
+        }
+
+        function renderDevices(devices) {
+            if (!devices || devices.length === 0) {
+                devicesList.innerHTML = '<div class="text-gray-400">No devices connected</div>';
+                return;
+            }
+
+            const html = devices.map(device => {
+                const lastSeen = new Date(device.last_seen * 1000).toLocaleTimeString();
+                return `
+                    <div class="p-3 bg-gray-700 rounded">
+                        <div class="font-semibold">${escapeHtml(device.device_id.substring(0, 12))}</div>
+                        <div class="text-xs text-gray-400">
+                            Last seen: ${lastSeen}<br>
+                            Events: ${device.event_count} | Process: ${escapeHtml(device.latest_process)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            devicesList.innerHTML = html;
+        }
+
+        function updateDeviceFilter(devices) {
+            const currentValue = deviceFilter.value;
+            deviceFilter.innerHTML = '<option value="">All Devices</option>' +
+                devices.map(device => 
+                    `<option value="${device.device_id}">${device.device_id.substring(0, 12)}</option>`
+                ).join('');
+            deviceFilter.value = currentValue;
+        }
+
+        function updateStats(events) {
+            const stats = events.reduce((acc, event) => {
+                const verdict = (event.verdict || '').toUpperCase();
+                acc.total++;
+                if (verdict === 'SAFE') acc.safe++;
+                else if (verdict === 'RISK') acc.risk++;
+                else if (verdict === 'CAUTION') acc.caution++;
+                return acc;
+            }, { total: 0, safe: 0, risk: 0, caution: 0 });
+
+            document.getElementById('total-events').textContent = stats.total;
+            document.getElementById('safe-count').textContent = stats.safe;
+            document.getElementById('risk-count').textContent = stats.risk;
+            document.getElementById('caution-count').textContent = stats.caution;
+        }
+
+        function toggleScan() {
+            if (isScanning) {
+                stopScan();
+            } else {
+                startScan();
+            }
+        }
+
+        function startScan() {
+            isScanning = true;
+            scanBtn.textContent = '⏹️ Stop Scan';
+            scanBtn.className = 'w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded';
+            scanBtn.classList.add('pulse');
+            
+            scanInterval = setInterval(() => {
+                loadData();
+                loadDevices();
+            }, 2000);
+        }
+
+        function stopScan() {
+            isScanning = false;
+            scanBtn.textContent = '📡 Start Live Scan';
+            scanBtn.className = 'w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded';
+            scanBtn.classList.remove('pulse');
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>
