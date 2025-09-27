@@ -145,4 +145,5 @@ if __name__ == "__main__":
     print("📡 Ready to monitor browser network activity")
     print("🔗 Access the dashboard at: http://localhost:5000")
     
+    # For local development
     app.run(host="0.0.0.0", port=5000, debug=True)
