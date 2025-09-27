@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Scanner - Cloud Dashboard</title>
+    <title>Privacy Scanner - Global Network Monitor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @keyframes pulse {
@@ -11,31 +11,47 @@
             50% { opacity: 0.5; }
         }
         .pulse { animation: pulse 2s infinite; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold mb-2">🔒 Privacy Scanner</h1>
-            <p class="text-gray-400">Real-time network monitoring from your devices</p>
+            <p class="text-gray-400">Monitor your browser's network activity in real-time</p>
+            <div class="mt-4 text-sm text-gray-500">
+                🌍 Works globally - no installation required
+            </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <!-- Device Status -->
+            <!-- Session Info -->
             <div class="bg-gray-800 rounded-lg p-6">
-                <h2 class="text-xl font-semibold mb-4">📱 Connected Devices</h2>
-                <div id="devices-list" class="space-y-2">
-                    <div class="text-gray-400">Loading devices...</div>
+                <h2 class="text-xl font-semibold mb-4">📱 Session Info</h2>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span>Session ID:</span>
+                        <span id="session-id" class="font-mono text-sm">Loading...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Browser:</span>
+                        <span id="browser-info" class="text-sm">Detecting...</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Status:</span>
+                        <span id="monitoring-status" class="text-green-400">Active</span>
+                    </div>
                 </div>
             </div>
 
             <!-- Quick Stats -->
             <div class="bg-gray-800 rounded-lg p-6">
-                <h2 class="text-xl font-semibold mb-4">📊 Quick Stats</h2>
+                <h2 class="text-xl font-semibold mb-4">📊 Network Stats</h2>
                 <div id="stats" class="space-y-2">
                     <div class="flex justify-between">
-                        <span>Total Events:</span>
-                        <span id="total-events" class="font-mono">0</span>
+                        <span>Total Requests:</span>
+                        <span id="total-requests" class="font-mono">0</span>
                     </div>
                     <div class="flex justify-between">
                         <span>Safe:</span>
@@ -49,6 +65,10 @@
                         <span>Caution:</span>
                         <span id="caution-count" class="text-yellow-400 font-mono">0</span>
                     </div>
+                    <div class="flex justify-between">
+                        <span>Unique Domains:</span>
+                        <span id="unique-domains" class="font-mono">0</span>
+                    </div>
                 </div>
             </div>
 
@@ -56,131 +76,256 @@
             <div class="bg-gray-800 rounded-lg p-6">
                 <h2 class="text-xl font-semibold mb-4">🎛️ Controls</h2>
                 <div class="space-y-3">
-                    <button id="refresh-btn" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
-                        🔄 Refresh Data
+                    <button id="start-monitoring" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                        🚀 Start Monitoring
                     </button>
-                    <button id="scan-btn" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
-                        📡 Start Live Scan
+                    <button id="stop-monitoring" class="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded hidden">
+                        ⏹️ Stop Monitoring
                     </button>
-                    <div class="text-xs text-gray-400">
-                        Run local_agent.py on your device to see real-time data
+                    <button id="clear-data" class="w-full bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">
+                        🗑️ Clear Data
+                    </button>
+                    <div class="text-xs text-gray-400 mt-2">
+                        Monitor network requests as you browse
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Events Display -->
+        <!-- Network Activity -->
         <div class="bg-gray-800 rounded-lg p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-xl font-semibold">🔍 Network Activity</h2>
                 <div class="flex items-center space-x-4">
-                    <select id="device-filter" class="bg-gray-700 text-white px-3 py-1 rounded">
-                        <option value="">All Devices</option>
-                    </select>
                     <span id="last-update" class="text-sm text-gray-400"></span>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full" id="status-indicator"></div>
+                        <span class="text-sm" id="status-text">Monitoring</span>
+                    </div>
                 </div>
             </div>
             
             <div id="events-container" class="space-y-3 max-h-96 overflow-y-auto">
                 <div class="text-center text-gray-400 py-8">
-                    <div class="text-4xl mb-2">📡</div>
-                    <div>No network activity detected</div>
-                    <div class="text-sm mt-2">Start the local agent to see real-time data</div>
+                    <div class="text-4xl mb-2">🌐</div>
+                    <div>Ready to monitor your network activity</div>
+                    <div class="text-sm mt-2">Click "Start Monitoring" to begin tracking requests</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="mt-8 bg-blue-900/20 border border-blue-500/30 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 text-blue-300">📖 How It Works</h3>
+            <div class="text-sm text-gray-300 space-y-2">
+                <p>• <strong>Start Monitoring:</strong> Begin tracking network requests from this browser session</p>
+                <p>• <strong>Browse Normally:</strong> Visit websites, use apps - we'll track the requests</p>
+                <p>• <strong>Real-time Analysis:</strong> See which domains are Safe, Risky, or Caution</p>
+                <p>• <strong>Privacy Focused:</strong> All data stays in your browser session, not stored permanently</p>
             </div>
         </div>
     </div>
 
     <script>
-        let isScanning = false;
-        let scanInterval = null;
+        // Global state
+        let isMonitoring = false;
+        let sessionId = generateSessionId();
+        let requestCount = 0;
+        let events = [];
 
         // DOM elements
         const eventsContainer = document.getElementById('events-container');
-        const devicesList = document.getElementById('devices-list');
-        const deviceFilter = document.getElementById('device-filter');
-        const refreshBtn = document.getElementById('refresh-btn');
-        const scanBtn = document.getElementById('scan-btn');
-        const lastUpdate = document.getElementById('last-update');
+        const startBtn = document.getElementById('start-monitoring');
+        const stopBtn = document.getElementById('stop-monitoring');
+        const clearBtn = document.getElementById('clear-data');
+        const sessionIdEl = document.getElementById('session-id');
+        const browserInfoEl = document.getElementById('browser-info');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            sessionIdEl.textContent = sessionId.substring(0, 12) + '...';
+            browserInfoEl.textContent = getBrowserInfo();
+            updateStats();
+        });
 
         // Event listeners
-        refreshBtn.addEventListener('click', loadData);
-        scanBtn.addEventListener('click', toggleScan);
-        deviceFilter.addEventListener('change', loadData);
+        startBtn.addEventListener('click', startMonitoring);
+        stopBtn.addEventListener('click', stopMonitoring);
+        clearBtn.addEventListener('click', clearData);
 
-        // Load initial data
-        loadData();
-        loadDevices();
+        // Generate unique session ID
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
 
-        async function loadData() {
+        // Get browser info
+        function getBrowserInfo() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Chrome')) return 'Chrome';
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Safari')) return 'Safari';
+            if (ua.includes('Edge')) return 'Edge';
+            return 'Unknown Browser';
+        }
+
+        // Start monitoring
+        function startMonitoring() {
+            if (isMonitoring) return;
+            
+            isMonitoring = true;
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            statusIndicator.className = 'w-2 h-2 bg-green-400 rounded-full pulse';
+            statusText.textContent = 'Monitoring';
+            
+            // Start tracking navigation
+            trackNavigation();
+            
+            // Start periodic sync
+            setInterval(syncEvents, 2000);
+            
+            console.log('🔍 Started monitoring network activity');
+        }
+
+        // Stop monitoring
+        function stopMonitoring() {
+            isMonitoring = false;
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            statusIndicator.className = 'w-2 h-2 bg-gray-400 rounded-full';
+            statusText.textContent = 'Stopped';
+            
+            console.log('⏹️ Stopped monitoring');
+        }
+
+        // Track page navigation and requests
+        function trackNavigation() {
+            // Track current page
+            trackRequest(window.location.href, 'navigation');
+            
+            // Track when user navigates away
+            window.addEventListener('beforeunload', function() {
+                trackRequest(window.location.href, 'navigation');
+            });
+            
+            // Track clicks on links
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A' && e.target.href) {
+                    setTimeout(() => {
+                        trackRequest(e.target.href, 'click');
+                    }, 100);
+                }
+            });
+            
+            // Track form submissions
+            document.addEventListener('submit', function(e) {
+                if (e.target.action) {
+                    trackRequest(e.target.action, 'form');
+                }
+            });
+            
+            // Track fetch requests (if any)
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                const url = args[0];
+                if (typeof url === 'string') {
+                    trackRequest(url, 'fetch');
+                }
+                return originalFetch.apply(this, args);
+            };
+        }
+
+        // Track a network request
+        function trackRequest(url, type) {
+            if (!isMonitoring) return;
+            
+            const event = {
+                url: url,
+                type: type,
+                timestamp: Date.now() / 1000,
+                method: 'GET',
+                status: 'pending'
+            };
+            
+            events.unshift(event);
+            if (events.length > 100) {
+                events = events.slice(0, 100);
+            }
+            
+            requestCount++;
+            updateDisplay();
+            updateStats();
+        }
+
+        // Sync events with server
+        async function syncEvents() {
+            if (!isMonitoring || events.length === 0) return;
+            
             try {
-                const deviceId = deviceFilter.value;
-                const url = deviceId ? `/api/events?device_id=${deviceId}` : '/api/events?n=100';
-                const response = await fetch(url);
-                const data = await response.json();
+                const response = await fetch('/api/browser-events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        events: events.slice(0, 10) // Send latest 10 events
+                    })
+                });
                 
-                renderEvents(data.events || []);
-                updateStats(data.events || []);
-                lastUpdate.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        // Remove synced events
+                        events = events.slice(10);
+                    }
+                }
             } catch (error) {
-                console.error('Error loading data:', error);
-                eventsContainer.innerHTML = '<div class="text-red-400 text-center py-4">Error loading data</div>';
+                console.log('Sync error:', error);
             }
         }
 
-        async function loadDevices() {
-            try {
-                const response = await fetch('/api/devices');
-                const data = await response.json();
-                
-                renderDevices(data.devices || []);
-                updateDeviceFilter(data.devices || []);
-            } catch (error) {
-                console.error('Error loading devices:', error);
-            }
-        }
-
-        function renderEvents(events) {
-            if (!events || events.length === 0) {
+        // Update display
+        function updateDisplay() {
+            if (events.length === 0) {
                 eventsContainer.innerHTML = `
                     <div class="text-center text-gray-400 py-8">
-                        <div class="text-4xl mb-2">📡</div>
+                        <div class="text-4xl mb-2">🌐</div>
                         <div>No network activity detected</div>
-                        <div class="text-sm mt-2">Start the local agent to see real-time data</div>
+                        <div class="text-sm mt-2">Browse some websites to see requests</div>
                     </div>
                 `;
                 return;
             }
 
             const html = events.map(event => {
-                const verdict = (event.verdict || '').toUpperCase();
-                const colorBg = verdict === 'RISK' ? 'bg-red-600/20' : 
-                              verdict === 'SAFE' ? 'bg-green-600/15' : 'bg-yellow-600/15';
-                const textColor = verdict === 'RISK' ? 'text-red-300' : 
-                                verdict === 'SAFE' ? 'text-green-300' : 'text-yellow-300';
+                const domain = extractDomain(event.url);
+                const verdict = classifyDomain(domain);
+                const colorBg = verdict === 'Risk' ? 'bg-red-600/20' : 
+                              verdict === 'Safe' ? 'bg-green-600/15' : 'bg-yellow-600/15';
+                const textColor = verdict === 'Risk' ? 'text-red-300' : 
+                                verdict === 'Safe' ? 'text-green-300' : 'text-yellow-300';
                 
-                const title = event.process_name ? 
-                    `${event.process_name} (PID ${event.pid || '?'})` : 
-                    `PID ${event.pid || '?'}`;
-                
-                const timestamp = new Date(event.timestamp * 1000).toLocaleString();
-                const deviceId = event.device_id ? event.device_id.substring(0, 8) : 'Unknown';
+                const timestamp = new Date(event.timestamp * 1000).toLocaleTimeString();
+                const typeIcon = getTypeIcon(event.type);
                 
                 return `
-                    <div class="p-4 rounded-lg ${colorBg} border border-gray-700">
+                    <div class="p-4 rounded-lg ${colorBg} border border-gray-700 fade-in">
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <div class="font-semibold text-lg">${escapeHtml(title)}</div>
+                                <div class="font-semibold text-lg">${typeIcon} ${escapeHtml(domain)}</div>
                                 <div class="text-sm text-gray-400 mt-1">
-                                    Device: ${escapeHtml(deviceId)} • ${escapeHtml(timestamp)}
+                                    ${escapeHtml(event.type)} • ${escapeHtml(timestamp)}
                                 </div>
-                                <div class="text-sm text-gray-300 mt-1">
-                                    ${escapeHtml(event.laddr || '')} → ${escapeHtml(event.raddr || '')}
+                                <div class="text-sm text-gray-300 mt-1 truncate">
+                                    ${escapeHtml(event.url)}
                                 </div>
                             </div>
                             <div class="text-right">
                                 <div class="text-lg font-bold ${textColor}">${escapeHtml(verdict)}</div>
-                                <div class="text-xs text-gray-400">${escapeHtml(event.status || '')}</div>
+                                <div class="text-xs text-gray-400">${escapeHtml(event.method)}</div>
                             </div>
                         </div>
                     </div>
@@ -190,83 +335,78 @@
             eventsContainer.innerHTML = html;
         }
 
-        function renderDevices(devices) {
-            if (!devices || devices.length === 0) {
-                devicesList.innerHTML = '<div class="text-gray-400">No devices connected</div>';
-                return;
-            }
-
-            const html = devices.map(device => {
-                const lastSeen = new Date(device.last_seen * 1000).toLocaleTimeString();
-                return `
-                    <div class="p-3 bg-gray-700 rounded">
-                        <div class="font-semibold">${escapeHtml(device.device_id.substring(0, 12))}</div>
-                        <div class="text-xs text-gray-400">
-                            Last seen: ${lastSeen}<br>
-                            Events: ${device.event_count} | Process: ${escapeHtml(device.latest_process)}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            devicesList.innerHTML = html;
-        }
-
-        function updateDeviceFilter(devices) {
-            const currentValue = deviceFilter.value;
-            deviceFilter.innerHTML = '<option value="">All Devices</option>' +
-                devices.map(device => 
-                    `<option value="${device.device_id}">${device.device_id.substring(0, 12)}</option>`
-                ).join('');
-            deviceFilter.value = currentValue;
-        }
-
-        function updateStats(events) {
+        // Update statistics
+        function updateStats() {
             const stats = events.reduce((acc, event) => {
-                const verdict = (event.verdict || '').toUpperCase();
+                const domain = extractDomain(event.url);
+                const verdict = classifyDomain(domain);
                 acc.total++;
-                if (verdict === 'SAFE') acc.safe++;
-                else if (verdict === 'RISK') acc.risk++;
-                else if (verdict === 'CAUTION') acc.caution++;
+                if (verdict === 'Safe') acc.safe++;
+                else if (verdict === 'Risk') acc.risk++;
+                else if (verdict === 'Caution') acc.caution++;
                 return acc;
             }, { total: 0, safe: 0, risk: 0, caution: 0 });
 
-            document.getElementById('total-events').textContent = stats.total;
+            document.getElementById('total-requests').textContent = stats.total;
             document.getElementById('safe-count').textContent = stats.safe;
             document.getElementById('risk-count').textContent = stats.risk;
             document.getElementById('caution-count').textContent = stats.caution;
+            document.getElementById('unique-domains').textContent = new Set(events.map(e => extractDomain(e.url))).size;
+            
+            document.getElementById('last-update').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
-        function toggleScan() {
-            if (isScanning) {
-                stopScan();
-            } else {
-                startScan();
+        // Clear all data
+        function clearData() {
+            events = [];
+            requestCount = 0;
+            updateDisplay();
+            updateStats();
+            console.log('🗑️ Cleared all data');
+        }
+
+        // Utility functions
+        function extractDomain(url) {
+            try {
+                const urlObj = new URL(url);
+                return urlObj.hostname;
+            } catch {
+                return url;
             }
         }
 
-        function startScan() {
-            isScanning = true;
-            scanBtn.textContent = '⏹️ Stop Scan';
-            scanBtn.className = 'w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded';
-            scanBtn.classList.add('pulse');
+        function classifyDomain(domain) {
+            const trusted = [
+                'google.com', 'gstatic.com', 'googleapis.com', 'microsoft.com',
+                'github.com', 'amazonaws.com', 'cloudflare.com', 'facebook.com',
+                'youtube.com', 'netflix.com', 'spotify.com'
+            ];
             
-            scanInterval = setInterval(() => {
-                loadData();
-                loadDevices();
-            }, 2000);
+            const risky = [
+                'doubleclick.net', 'adservice.google.com', 'googlesyndication.com',
+                'googletagmanager.com', 'analytics', 'tracking', 'tracker'
+            ];
+            
+            const domainLower = domain.toLowerCase();
+            
+            if (trusted.some(pattern => domainLower.includes(pattern))) {
+                return 'Safe';
+            }
+            if (risky.some(pattern => domainLower.includes(pattern))) {
+                return 'Risk';
+            }
+            return 'Caution';
         }
 
-        function stopScan() {
-            isScanning = false;
-            scanBtn.textContent = '📡 Start Live Scan';
-            scanBtn.className = 'w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded';
-            scanBtn.classList.remove('pulse');
-            
-            if (scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
-            }
+        function getTypeIcon(type) {
+            const icons = {
+                'navigation': '🌐',
+                'click': '👆',
+                'form': '📝',
+                'fetch': '📡',
+                'default': '🔗'
+            };
+            return icons[type] || icons.default;
         }
 
         function escapeHtml(text) {

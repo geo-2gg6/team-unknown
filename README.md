@@ -1,64 +1,100 @@
-# Privacy Scanner - Cloud + Local Agent
+# Privacy Scanner - Global Web App
 
-A privacy monitoring system that runs a cloud dashboard on Render and local agents on devices to monitor network traffic in real-time.
+A privacy monitoring system that works for **anyone worldwide** just by visiting the web app. No installation, no local agents, no browser extensions required!
 
-## Architecture
+## 🌍 Global Access
 
-- **Cloud Backend** (Render): Receives and displays data from multiple devices
-- **Local Agent** (Device): Monitors network activity and sends to cloud
+- **Works for everyone**: Just visit the Render URL from any device
+- **No installation**: Pure web app, works in any modern browser
+- **Real-time monitoring**: Tracks network requests as users browse
+- **Smart classification**: Safe/Risk/Caution based on destination domains
 
-## Setup
+## 🚀 Quick Start
 
-### 1. Deploy to Render
+1. **Deploy to Render**:
+   - Push this code to GitHub
+   - Connect to Render, deploy as Web Service
+   - Get your public URL (e.g., `https://your-app.onrender.com`)
 
-1. Push this code to GitHub
+2. **Use globally**:
+   - Share the URL with anyone worldwide
+   - They visit the link and click "Start Monitoring"
+   - Real-time network activity tracking begins
+
+## 🔍 How It Works
+
+### Browser-Based Monitoring
+- **Navigation tracking**: Monitors page visits and link clicks
+- **Form submissions**: Tracks form data being sent
+- **Fetch requests**: Monitors AJAX/API calls
+- **Real-time analysis**: Classifies domains as Safe/Risk/Caution
+
+### Smart Classification
+- **Safe**: Trusted domains (google.com, microsoft.com, github.com, etc.)
+- **Risk**: Known tracking/ads domains (doubleclick.net, googlesyndication.com, etc.)
+- **Caution**: Unknown or suspicious domains
+
+### Privacy Features
+- **Session-based**: Each user gets their own session
+- **No permanent storage**: Data only exists during the session
+- **Client-side processing**: Most analysis happens in the browser
+- **HTTPS only**: All communication is encrypted
+
+## 📊 Features
+
+- **Real-time dashboard**: Live network activity display
+- **Session statistics**: Request counts, domain analysis
+- **Visual indicators**: Color-coded Safe/Risk/Caution
+- **Responsive design**: Works on desktop and mobile
+- **No dependencies**: Pure HTML/CSS/JavaScript
+
+## 🛠️ Technical Details
+
+### Backend (Flask)
+- Receives browser events via REST API
+- Classifies domains using pattern matching
+- Stores session data temporarily
+- CORS enabled for global access
+
+### Frontend (Vanilla JS)
+- Monitors browser navigation and requests
+- Real-time UI updates
+- Session management
+- Domain classification
+
+### Deployment
+- **Render**: Easy deployment with automatic HTTPS
+- **Environment**: Python 3.9+ with Flask
+- **Dependencies**: Minimal (just Flask + CORS)
+
+## 🔒 Privacy & Security
+
+- **No data collection**: We don't store personal information
+- **Session isolation**: Each user's data is separate
+- **Local processing**: Most analysis happens in the browser
+- **HTTPS only**: All communication is encrypted
+- **No tracking**: We don't track users across sessions
+
+## 🌐 Global Use Cases
+
+- **Privacy awareness**: Help users understand what their browser is doing
+- **Educational tool**: Teach about network privacy and tracking
+- **Security audit**: Quick check of suspicious network activity
+- **Research**: Analyze web tracking patterns across different sites
+
+## 📱 Browser Support
+
+- ✅ Chrome/Chromium
+- ✅ Firefox
+- ✅ Safari
+- ✅ Edge
+- ✅ Mobile browsers
+
+## 🚀 Deployment
+
+1. Fork this repository
 2. Connect to Render
-3. Deploy as a Web Service
-4. Note your Render URL (e.g., `https://your-app.onrender.com`)
+3. Deploy as Web Service
+4. Share the URL globally!
 
-### 2. Run Local Agent
-
-On each device you want to monitor:
-
-```bash
-# Install dependencies
-pip install psutil requests
-
-# Run the agent
-python local_agent.py
-```
-
-When prompted, enter your Render URL.
-
-## Features
-
-- **Real-time monitoring**: Live network activity from your devices
-- **Multi-device support**: Monitor multiple devices from one dashboard
-- **Smart classification**: Safe/Risk/Caution based on destinations
-- **Process tracking**: See which apps are making connections
-- **Cloud dashboard**: Access from anywhere
-
-## How It Works
-
-1. Local agent runs on your device using `psutil` to monitor TCP connections
-2. Agent classifies connections as Safe/Risk/Caution based on destination patterns
-3. Agent sends data to your cloud backend every 5 seconds
-4. Cloud dashboard displays real-time activity from all connected devices
-
-## Classification Rules
-
-- **Safe**: Trusted domains (google.com, microsoft.com, etc.) + web ports (80, 443)
-- **Risk**: Known risky patterns (trackers, ads) + dangerous ports (21, 23, 25, etc.)
-- **Caution**: Everything else
-
-## Security
-
-- Each device gets a unique ID based on hostname + MAC
-- No sensitive data is stored permanently
-- All communication is over HTTPS
-
-## Troubleshooting
-
-- **No data showing**: Make sure local agent is running and connected
-- **Permission errors**: Run local agent as administrator on Windows
-- **Connection issues**: Check your Render URL and internet connection
+**That's it!** Anyone can now use your privacy scanner by just visiting the link.
